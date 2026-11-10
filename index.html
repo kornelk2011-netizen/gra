@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EKIPA — gry multiplayer</title>
+<style>
+:root{--bg:#090d18;--panel:#131c2e;--panel2:#1b2941;--line:#2b3b59;--txt:#f5f7ff;--muted:#a5b2cc;--purple:#9466ff;--cyan:#36d9ed;--green:#35d39a;--pink:#ff6f91}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#30215d 0,transparent 38%),radial-gradient(ellipse at 95% 20%,#104257 0,transparent 32%),var(--bg);color:var(--txt);font:16px/1.5 system-ui,Segoe UI,sans-serif}
+main{width:min(1050px,94vw);margin:24px auto 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.logo{font-size:clamp(30px,6vw,48px);font-weight:1000;letter-spacing:3px}.logo b{color:var(--cyan)}.tag{color:var(--muted);margin-top:-5px}.status{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:7px 11px}
+.card{background:linear-gradient(145deg,#172239f2,#111a2bf2);border:1px solid var(--line);border-radius:20px;padding:22px;margin:15px 0;box-shadow:0 16px 50px #0004}.hidden{display:none!important}h2{margin:0 0 13px;font-size:22px}h3{margin:0 0 7px}p{margin:8px 0}.muted{color:var(--muted)}.small{font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}
+label{display:block;color:var(--muted);font-size:13px;margin:12px 0 6px}input,select,textarea{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:#0b1424;color:var(--txt);font:inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--cyan)}
+button{border:0;border-radius:12px;padding:12px 17px;background:linear-gradient(100deg,var(--purple),#5b74ff);color:white;font-weight:800;font-size:14px;cursor:pointer}button:hover{filter:brightness(1.1)}button:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#2a3955}.cyan{background:linear-gradient(100deg,#0891b2,#2563eb)}.green{background:linear-gradient(100deg,#059669,#20bd8b)}.pink{background:linear-gradient(100deg,#be3862,#ed5c85)}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.gamegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}.game{border:1px solid var(--line);background:linear-gradient(145deg,#1b2942,#121b2d);padding:17px;border-radius:16px;min-height:145px;display:flex;flex-direction:column;gap:7px}.emoji{font-size:30px}.game button{margin-top:auto}.code{font-size:32px;font-weight:1000;letter-spacing:7px;color:var(--cyan)}.player{padding:10px 12px;border-radius:11px;background:#0d1728;border:1px solid var(--line);margin:6px 0;display:flex;justify-content:space-between}.pill{font-size:11px;padding:4px 9px;border-radius:99px;background:#35285c;color:#d6c8ff}.notice{padding:13px;border:1px solid #286273;background:#10303b;border-radius:13px;color:#c4f5ff}.word{font-size:clamp(32px,8vw,58px);font-weight:1000;text-align:center;color:var(--cyan);margin:16px 0;overflow-wrap:anywhere}.center{text-align:center}.options{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin:14px 0}.options button{min-height:54px;background:#263653}.options button.chosen{outline:2px solid var(--cyan)}.answer{padding:12px;border-radius:12px;background:#0c1728;border:1px solid var(--line);margin:7px 0}.footer{text-align:center;color:#7786a2;font-size:12px;margin-top:26px}
+@media(max-width:560px){.card{padding:17px}.row>*{min-width:100%}.top .status{width:100%;text-align:center}}
+</style>
+</head>
+<body><main>
+<header class="top"><div><div class="logo">E<b>KIPA</b></div><div class="tag">Gry imprezowe dla Twojej paczki</div></div><div class="status" id="connection">Tryb demonstracyjny · skonfiguruj Firebase dla online</div></header>
+
+<section id="home" class="card">
+<h2>🎮 Witaj w Ekipie!</h2>
+<p class="muted">Stwórz pokój, wyślij znajomym kod i wybierz jedną z 12 gier. Każdy może dołączyć z telefonu lub komputera.</p>
+<div class="grid">
+<div><label>Twój nick</label><input id="nick" maxlength="18" placeholder="np. Kornel"></div>
+<div><label>Kod pokoju</label><input id="joinCode" maxlength="6" placeholder="np. A7K2Q9" style="text-transform:uppercase"></div>
+</div>
+<div class="row" style="margin-top:14px"><button class="cyan" id="joinBtn">Dołącz do pokoju</button><button id="createBtn">Utwórz nowy pokój</button></div>
+<div id="homeMsg" class="small muted" style="margin-top:10px">Wersja demonstracyjna pozwala przetestować menu na jednym urządzeniu. Do gry online dodaj konfigurację Firebase — instrukcja w README.</div>
+</section>
+
+<section id="lobby" class="card hidden">
+<div class="row"><div><div class="small muted">KOD POKOJU — WYŚLIJ GO ZNAJOMYM</div><div class="code" id="roomCode"></div></div><div><span class="pill" id="hostLabel">POKÓJ</span><p class="muted small" id="roomStatus">Oczekiwanie na graczy</p></div></div>
+<h2 style="margin-top:18px">👥 Ekipa <span class="muted" id="count"></span></h2><div id="players"></div>
+<h2 style="margin-top:22px">Wybierz grę</h2><div class="gamegrid" id="gameGrid"></div>
+<div class="row" style="margin-top:16px"><button class="secondary" id="leaveBtn">Opuść pokój</button><button class="pink" id="resetBtn">Wróć do lobby</button></div>
+</section>
+
+<section id="play" class="card hidden">
+<div class="row"><div><span class="pill" id="gameTag">GRA</span></div><div class="small muted" id="playRoom"></div></div>
+<div id="playContent" style="margin-top:17px"></div>
+<div class="row" style="margin-top:18px"><button class="secondary" id="backBtn">Lobby</button><button id="nextBtn">Następna runda</button></div>
+</section>
+<div class="footer">EKIPA · 12 GIER · MULTIPLAYER PARTY</div>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInAnonymously,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,setDoc,getDoc,updateDoc,onSnapshot,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDLv94N4IqvIvnCCUM-gZB7gmvgLJnSedg",
+  authDomain: "mini-giame.firebaseapp.com",
+  projectId: "mini-giame",
+  storageBucket: "mini-giame.firebasestorage.app",
+  messagingSenderId: "679910342954",
+  appId: "1:679910342954:web:8d1c5841dae976437b5e53",
+  measurementId: "G-WV9CS0F3SJ"
+};
+const $=id=>document.getElementById(id);
+const games=[
+{id:"czolo",name:"Czółko",emoji:"🤔",desc:"Zgadnij, jakie hasło masz na czole."},
+{id:"impostor",name:"Impostor",emoji:"🕵️",desc:"Jedna osoba nie zna tajnego słowa."},
+{id:"spyfall",name:"Spyfall",emoji:"🗺️",desc:"Odkryj szpiega, zanim odkryje miejsce."},
+{id:"mafia",name:"Mafia",emoji:"🌙",desc:"Tajne role, dyskusja i głosowanie."},
+{id:"heads",name:"Kalambury",emoji:"🎭",desc:"Pokaż hasło bez używania słów."},
+{id:"most",name:"Kto najprędzej…",emoji:"👉",desc:"Wskażcie osobę pasującą do pytania."},
+{id:"truth",name:"Prawda czy fałsz",emoji:"🧠",desc:"Zgadnij, czy ciekawostka jest prawdziwa."},
+{id:"five",name:"5 sekund",emoji:"⏱️",desc:"Wymień trzy rzeczy w pięć sekund."},
+{id:"association",name:"Skojarzenia",emoji:"💭",desc:"Łańcuch skojarzeń bez powtórek."},
+{id:"wouldyou",name:"Co wolisz?",emoji:"⚖️",desc:"Wybierz jedną z dwóch opcji."},
+{id:"quiz",name:"Szybki quiz",emoji:"🏆",desc:"Odpowiadajcie na pytania ABC."},
+{id:"category",name:"Kategorie",emoji:"🗂️",desc:"Znajdź słowo pasujące do kategorii."}
+];
+const decks={
+czolo:["Astronauta","Pingwin","Harry Potter","Pizza","Dinozaur","Lew","Robert Lewandowski","Shrek","Wulkan","Żyrafa","Minecraft","Batman","Kaktus","Olimpiada"],
+impostor:["Siatkówka","Kebab","Minecraft","Delfin","Paryż","Haikyuu!!","Rower","Wulkan","Panda","Fortnite","Pizza","Kosmos"],
+spyfall:["Szkoła","Lotnisko","Plaża","Szpital","Kino","Restauracja","Stadion","Pociąg","Hotel","Biblioteka"],
+mafia:["Miasto","Wioska","Statek","Szkoła"],
+heads:["Żyrafa","Taniec","Rower","Naleśniki","Superbohater","Deszcz","Gitara","Pingwin"],
+most:["Kto najprędzej zostanie sławny?","Kto najczęściej się spóźnia?","Kto przetrwałby na bezludnej wyspie?","Kto najwięcej gada?","Kto zostałby milionerem?"],
+truth:["Ośmiornica ma trzy serca.","Pingwiny potrafią latać.","Miód może się nie psuć przez bardzo długi czas.","Rekiny są ssakami."],
+five:["Wymień 3 owoce.","Wymień 3 gry komputerowe.","Wymień 3 państwa w Europie.","Wymień 3 zwierzęta żyjące w wodzie.","Wymień 3 sporty."],
+association:["Zacznij od słowa: MORZE","Zacznij od słowa: SZKOŁA","Zacznij od słowa: PIŁKA","Zacznij od słowa: ANIME"],
+wouldyou:["Latać czy być niewidzialnym?","Mieć super siłę czy super szybkość?","Mieszkać nad morzem czy w górach?","Znać wszystkie języki czy grać na każdym instrumencie?"],
+quiz:["Która planeta jest największa?","Ile boków ma sześciokąt?","Jak nazywa się stolica Francji?","Który ocean jest największy?"],
+category:["Wymień zwierzę na literę K.","Wymień jedzenie na literę P.","Wymień państwo na literę S.","Wymień sport na literę T."]
+};
+let app,auth,db,uid,roomId=null,roomRef=null,unsub=null,roomData=null,activeGame=null,roundIndex=0;
+const configured=firebaseConfig.apiKey!=="WKLEJ_API_KEY"&&firebaseConfig.projectId!=="WKLEJ_PROJECT_ID";
+const setMsg=(s,err=false)=>{$("homeMsg").textContent=s;$("homeMsg").style.color=err?"#ff9fb4":"#a5b2cc"};
+const view=id=>["home","lobby","play"].forEach(x=>$(x).classList.toggle("hidden",x!==id));
+const makeCode=()=>Math.random().toString(36).slice(2,8).toUpperCase();
+const nick=()=>($("nick").value.trim()||"Gracz").slice(0,18);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function renderGames(){
+ $("gameGrid").innerHTML=games.map(g=>`<article class="game"><div class="emoji">${g.emoji}</div><h3>${g.name}</h3><div class="small muted">${g.desc}</div><button data-game="${g.id}">Zagraj</button></article>`).join("");
+ $("gameGrid").querySelectorAll("button").forEach(b=>b.onclick=()=>startGame(b.dataset.game));
+}
+function renderLobby(){
+ view("lobby");$("roomCode").textContent=roomId;$("count").textContent=`(${Object.keys(roomData.players||{}).length})`;
+ $("hostLabel").textContent=roomData.host===uid?"HOST":"GRACZ";
+ $("roomStatus").textContent=configured?"Pokój online":"Tryb demonstracyjny";
+ $("players").innerHTML=Object.entries(roomData.players||{}).map(([id,p])=>`<div class="player"><span>${esc(p.name)}</span>${id===roomData.host?'<span class="pill">HOST</span>':''}</div>`).join("");
+ renderGames();
+}
+function listen(id){
+ if(unsub)unsub();roomId=id;roomRef=doc(db,"partyRooms",id);
+ unsub=onSnapshot(roomRef,s=>{if(!s.exists()){setMsg("Pokój nie istnieje.",true);leave();return;}roomData=s.data();renderLobby();},e=>setMsg("Błąd połączenia: "+e.message,true));
+}
+async function createRoom(){
+ if(!configured){roomId=makeCode();uid="demo-"+Math.random().toString(36).slice(2,8);roomData={host:uid,players:{[uid]:{name:nick()}},demo:true};renderLobby();return;}
+ if(!uid)return setMsg("Łączenie z serwerem…");
+ const id=makeCode();roomRef=doc(db,"partyRooms",id);
+ try{await setDoc(roomRef,{host:uid,players:{[uid]:{name:nick()}},createdAt:serverTimestamp(),activeGame:null,round:0});listen(id);}
+ catch(e){setMsg("Nie udało się utworzyć pokoju: "+e.message,true);}
+}
+async function joinRoom(){
+ const id=$("joinCode").value.trim().toUpperCase();if(id.length<4)return setMsg("Wpisz kod pokoju.",true);
+ if(!configured)return setMsg("Tryb demo nie obsługuje dołączania z innych urządzeń. Skonfiguruj Firebase.",true);
+ if(!uid)return setMsg("Łączenie z serwerem…");
+ try{const ref=doc(db,"partyRooms",id),s=await getDoc(ref);if(!s.exists())return setMsg("Nie znaleziono pokoju.",true);await updateDoc(ref,{["players."+uid]:{name:nick()}});listen(id);}
+ catch(e){setMsg("Nie udało się dołączyć: "+e.message,true);}
+}
+async function startGame(id){
+ activeGame=id;roundIndex=(roomData.round||0)+1;
+ const g=games.find(x=>x.id===id),deck=decks[id]||decks.czoło,question=deck[Math.floor(Math.random()*deck.length)];
+ if(configured&&roomData.host===uid){try{await updateDoc(roomRef,{activeGame:id,round:roundIndex,question,startedAt:Date.now()});}catch(e){alert(e.message);}}
+ else if(configured){setMsg("Tylko host wybiera grę i rozpoczyna rundę.");return;}
+ renderPlay(g,question);
+}
+function renderPlay(g,q){
+ view("play");$("gameTag").textContent=g.emoji+" "+g.name.toUpperCase();$("playRoom").textContent="POKÓJ "+roomId;
+ let extra="";
+ if(g.id==="czolo")extra=`<div class="notice">Przyłóż telefon do czoła albo pokaż ekran osobie zgadującej. Pozostali dają wskazówki, nie mówiąc hasła.</div>`;
+ if(g.id==="impostor")extra=`<div class="notice">W tej wersji demonstracyjnej wszyscy widzą hasło. W pełnej rozgrywce role są rozdawane prywatnie.</div>`;
+ if(g.id==="spyfall"||g.id==="mafia")extra=`<div class="notice">Wersja imprezowa: host prowadzi rundę, a gracze rozmawiają i próbują odkryć tajną rolę.</div>`;
+ if(g.id==="heads")extra=`<div class="notice">Pokaż hasło gestami. Nie mów, nie literuj i nie wskazuj napisów.</div>`;
+ if(g.id==="most")extra=`<div class="notice">Na trzy każdy wskazuje osobę, która najbardziej pasuje do pytania. Potem krótko uzasadnijcie wybór.</div>`;
+ if(g.id==="truth")extra=`<div class="options"><button onclick="this.classList.add('chosen')">PRAWDA</button><button onclick="this.classList.add('chosen')">FAŁSZ</button></div>`;
+ if(g.id==="wouldyou")extra=`<div class="options"><button onclick="this.classList.add('chosen')">Opcja A</button><button onclick="this.classList.add('chosen')">Opcja B</button></div>`;
+ if(g.id==="quiz")extra=`<div class="options"><button onclick="this.classList.add('chosen')">A</button><button onclick="this.classList.add('chosen')">B</button><button onclick="this.classList.add('chosen')">C</button></div>`;
+ if(g.id==="five"||g.id==="category"||g.id==="association")extra=`<div class="notice">Odpowiadajcie po kolei. Nie powtarzajcie odpowiedzi, a jeśli ktoś utknie, kolejka przechodzi dalej.</div>`;
+ $("playContent").innerHTML=`<div class="center"><div class="muted small">HASŁO / WYZWANIE</div><div class="word">${esc(q)}</div></div>${extra}<label>Notatka / odpowiedź (widoczna tylko na Twoim ekranie)</label><input id="localAnswer" placeholder="Wpisz swoją odpowiedź lub notatkę…">`;
+}
+async function refreshRound(){
+ if(!activeGame)return;const deck=decks[activeGame]||decks.czolo,q=deck[Math.floor(Math.random()*deck.length)];
+ if(configured&&roomData.host===uid){await updateDoc(roomRef,{question:q,round:(roomData.round||0)+1});}
+ renderPlay(games.find(x=>x.id===activeGame),q);
+}
+async function leave(){
+ if(unsub){unsub();unsub=null;}roomId=null;roomData=null;activeGame=null;view("home");
+}
+$("createBtn").onclick=createRoom;$("joinBtn").onclick=joinRoom;$("leaveBtn").onclick=leave;$("backBtn").onclick=()=>view("lobby");$("resetBtn").onclick=()=>view("lobby");$("nextBtn").onclick=refreshRound;
+if(configured){
+ try{app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);$("connection").textContent="Łączenie z multiplayer…";signInAnonymously(auth).catch(e=>setMsg("Logowanie Firebase: "+e.message,true));onAuthStateChanged(auth,u=>{if(u){uid=u.uid;$("connection").textContent="● Połączono z Firebase";$("connection").style.color="#35d39a";}});}
+ catch(e){setMsg("Błąd Firebase: "+e.message,true);}
+}else{$("connection").textContent="Tryb demo · Firebase nie skonfigurowany";$("connection").style.color="#ffca75";}
+</script>
+</body></html>
